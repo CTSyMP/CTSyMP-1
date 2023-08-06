@@ -3,6 +3,7 @@
 __doc__ = '[IMPORTANT] You *MUST* run "initialise_model" first for initialisation of the model which will be used for performance analysis.'
 from typing import Literal
 from collections import deque
+from warnings import catch_warnings, simplefilter
 
 import librosa as lb
 import numpy as np
@@ -39,11 +40,11 @@ pta = perf_to_array
 # 音量の抽出
 def get_vol(y:np.ndarray):
     rms = lb.feature.rms(y = y, hop_length = 441, center = False)
-    return lb.amplitude_to_db(rms, ref = 2e-5)
+    return lb.amplitude_to_db(rms, ref = 2e-5)[0]
 
 # ピアノロール抽出
 def extract_piano_roll(y:np.ndarray):
-    baseamp = lb.amplitude_to_db(np.abs(lb.cqt(y, sr = 44100, hop_length = 441, fmin = lb.note_to_hz('F0'), n_bins = 120)), ref = 2e-5)
+    baseamp = lb.amplitude_to_db(np.abs(lb.cqt(y, sr = 44100, hop_length = 441, fmin = lb.note_to_hz('F0'), n_bins = 120, res_type = 'kaiser_fast')), ref = 2e-5)
     formatted = np.pad(baseamp, [[0, 12], [0, 0]])
     formatted[formatted < 0] = 0
     inp = powerconv(formatted)
@@ -115,26 +116,23 @@ def analyse_by_comparison(perf1:np.ndarray, perf2:np.ndarray,
                      for i in range(len(reduced_ind)-1)]
     print('done', flush = True)
 
-    # 窓幅分縮んだ音量長さのパディング
-    vol1 = np.pad(vol1, [[0, len(y1)-len(vol1)]])
-    vol2 = np.pad(vol2, [[0, len(y2)-len(vol2)]])
-
     # 部分音量比較
     print('Comparing partial volume balance...      ', end = '', flush = True)
-    vpo1 = np.array([np.max(vol1) - np.average(vol1[reduced_ind[i][0]:reduced_ind[i+1][0]]) for i in range(len(reduced_ind)-1)])
-    vpo2 = np.array([np.max(vol2) - np.average(vol2[reduced_ind[i][1]:reduced_ind[i+1][1]]) for i in range(len(reduced_ind)-1)])
-    vpo_rate = [_rating([item<-4, -4<=item and item<-2, 2<item and item<=4, 4<item], \
-                        [-2, -1, 1, 2], 0) for item in vpo1 - vpo2] # -2から、極小、小、適、大、極大
-    
-    foldedspec1 = np.array([[np.average(np.sum(y1[8*i:8*i+8, reduced_ind[j][0]:reduced_ind[j+1][0]])) \
-                             for i in range(11)] for j in range(len(reduced_ind)-1)]) # 厳密に計算するなら位相も要る
-    foldedspec1[np.isnan(foldedspec1)] = 0
-    foldedspec2 = np.array([[np.average(np.sum(y2[8*i:8*i+8, reduced_ind[j][1]:reduced_ind[j+1][1]])) \
-                             for i in range(11)] for j in range(len(reduced_ind)-1)])
-    foldedspec2[np.isnan(foldedspec2)] = 0
-    foldeds_max = (np.max([foldedspec1, foldedspec2], axis = 0) > 32).astype('u1')
-    foldedspec_rate = np.array([[_rating([item<-6, -6<=item and item<-3, 3<item and item<=6, 6<item], \
-                        [-2, -1, 1, 2], 0) for item in _fr] for _fr in foldedspec1-foldedspec2]) * foldeds_max
+    with catch_warnings():
+        simplefilter('ignore', RuntimeWarning)
+        vpo1 = np.array([np.average(vol1[reduced_ind[i][0]:reduced_ind[i+1][0]]) for i in range(len(reduced_ind)-1)])
+        vpo2 = np.array([np.average(vol2[reduced_ind[i][1]:reduced_ind[i+1][1]]) for i in range(len(reduced_ind)-1)])
+        vpo_rate = [_rating([item<-3, -3<=item and item<-1.5, 1.5<item and item<=3, 3<item], \
+                            [-2, -1, 1, 2], 0) for item in vpo1 - vpo2] # -2から、極小、小、適、大、極大
+        
+        foldedspec1 = np.array([[np.average(y1[8*i:8*i+8, reduced_ind[j][0]:reduced_ind[j+1][0]]) \
+                                for i in range(11)] for j in range(len(reduced_ind)-1)]) # 厳密に計算するなら位相も要る
+        foldedspec1[np.isnan(foldedspec1)] = 0
+        foldedspec2 = np.array([[np.average(y2[8*i:8*i+8, reduced_ind[j][1]:reduced_ind[j+1][1]]) \
+                                for i in range(11)] for j in range(len(reduced_ind)-1)])
+        foldedspec2[np.isnan(foldedspec2)] = 0
+        foldedspec_rate = np.array([[_rating([item<-3, -3<=item and item<-1.5, 1.5<item and item<=3, 3<item], \
+                            [-2, -1, 1, 2], 0) for item in _fr] for _fr in foldedspec1-foldedspec2])
     print('done', flush = True)
     
     # もつれ度比較
