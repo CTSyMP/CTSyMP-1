@@ -149,8 +149,8 @@ def analyse_by_comparison(perf1:np.ndarray, perf2:np.ndarray,
     for item in gap1:
         if item < 16 and tmpval:
             tmp = item/tmpval
-            if tmp < .7071: tmp *= 2 # 一応7msと14msで弾き分けが利かないこともないので倍の長さに対応
-            elif tmp > 1.414: tmp /= 2
+            if tmp < .7071: tmp *= 2 # 一応70msと140msで弾き分けが利かないこともないので倍の長さに対応
+            elif tmp > 1.4142: tmp /= 2
             gaprate1.append(tmp*100)
         tmpval = item
 
@@ -159,11 +159,14 @@ def analyse_by_comparison(perf1:np.ndarray, perf2:np.ndarray,
         if item < 16 and tmpval:
             tmp = item/tmpval
             if tmp < .7071: tmp *= 2
-            elif tmp > 1.414: tmp /= 2
+            elif tmp > 1.4142: tmp /= 2
             gaprate2.append(tmp*100)
         tmpval = item
 
     randv1, randv2 = np.std(gaprate1), np.std(gaprate2)
+    if np.isnan(randv1): randv1 = 0
+    if np.isnan(randv2): randv2 = 0
+
     print('done', flush = True)
 
     retdict = {
