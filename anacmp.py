@@ -23,6 +23,13 @@ from modelstack2 import powerconv, ToneEnDv2
 DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 # モデルの設定 ピッチディテクションモデルを改良した場合はここを変えればよい
 MODEL = ToneEnDv2(0).to(DEVICE)
+_CQT_LAYER = CQT1992v2(44100, 441, lb.note_to_hz('F0'), n_bins = 120, pad_mode = 'constant', verbose = False).to(DEVICE)
+
+# 予めCQTレイヤを準備しておくので、デバイス変更の際は同時に変える
+def designate_device(devicename: Literal['cpu', 'cuda:0', 'cuda:1']):
+    global DEVICE, _CQT_LAYER
+    DEVICE = devicename
+    _CQT_LAYER = CQT1992v2(44100, 441, lb.note_to_hz('F0'), n_bins = 120, pad_mode = 'constant', verbose = False).to(DEVICE)
 
 # モデル初期化
 def initialise_model(model_state_dict_path: str): MODEL.load_state_dict(torch.load(model_state_dict_path, map_location = DEVICE))
@@ -30,10 +37,8 @@ I = initialise_model
 
 # 高速化用。librosa.cqtの代わり
 def _cqt(y:np.ndarray):
-    global DEVICE
-    layer_cqt = CQT1992v2(44100, 441, lb.note_to_hz('F0'), n_bins = 120, pad_mode = 'constant').to(DEVICE)
     y_tensor = torch.from_numpy(y.astype('f4').copy()).to(DEVICE)
-    retval = layer_cqt(y_tensor).to('cpu').numpy().copy()
+    retval = _CQT_LAYER(y_tensor).to('cpu').numpy().copy()
     return retval[0]
 
 # 音源の読み込み。強制的に44100Hzのレートでとって、トリミングする
