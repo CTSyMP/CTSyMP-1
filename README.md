@@ -1,6 +1,6 @@
 # CTSyMP-1
 Computer Tutoring System for Musical Practice (some unnecessary files has been deleted)  
-楽曲音源の比較を通じた評価 / 数値データを提供します。(Tutorといいつつ細かいコツの指導まではしません。ご了承ください。)  
+楽曲音源の比較を通じた評価 / 数値データを提供します。(Tutorといいつつ細かいコツの指導まではまだできません。ご了承ください。)  
 まだまだ高精度とは言い切れませんが、改善を目指します。  
 
 ## ファイル
