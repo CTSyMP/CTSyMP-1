@@ -9,6 +9,12 @@ Computer Tutoring System for Musical Practice (some unnecessary files has been d
 data/ 中の諸ファイル  
 →モデル情報が入っています。.pthファイルがpytorchの`state_dict`、.trlファイルが学習記録です。後者は`pickle.load`で読み込めます。  
 
+mus/ 中のファイル  
+F. Chopin の作品25-9の録音が2点同梱されております。情報の抽出及び比較用のサンプルとしてご活用ください。  
+25-09.mp3 Mehmet K. Okonşar氏のIMSLP (https://imslp.org/wiki/Special:ImagefromIndex/292154/wc14) 上にアップロードされている演奏。
+LMO-Recordsを公開者として2013年8月13日に公表されているものより抜粋。(CC BY-NC 3.0)  
+25-09-study.mp3 筆者による録音。  
+
 anacmp.py 比較による演奏分析を行います。  
 ①`initialise_model(.pthファイルのパス)` (※ショートカット: `I`) で推論モデルを使用可能にし、  
 ②`perf_to_array(音源パス, ノイズが最大音より何dB小さいか, 始点, 終点)` (※ショートカット: `pta`) で音源を1つずつndarrayに変換して、  
