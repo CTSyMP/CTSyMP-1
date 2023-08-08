@@ -96,7 +96,8 @@ ap = audiodata_prep
 bpaths = [msc.O + 'data/' + name + '.wav' for name in \
     {'blank', 'blue_noise', 'brownian_noise', 'pink_noise', 'violet_noise', 'white_noise'}]
 # ベースになる音
-base = [lb.load(item, sr = 44100)[0] for item in bpaths]
+try: base = [lb.load(item, sr = 44100)[0] for item in bpaths]
+except: base = []
 
 # 評価用
 def where(ev):
