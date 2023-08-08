@@ -68,7 +68,7 @@ def extract_piano_roll(y:np.ndarray):
     # lb.cqtをnnAudioベースに置換 Tensor -> ndarray -> tensor は明らかに非効率なので改善予定
     formatted = np.pad(baseamp, [[0, 12], [0, 0]])
     formatted[formatted < 0] = 0
-    inp = powerconv(formatted)
+    inp = powerconv(formatted).to(DEVICE)
     
     MODEL.eval()
     with torch.no_grad(): outp = powerconv(MODEL(inp))
