@@ -3,7 +3,12 @@
 # 鳴らすタイミング、音量操作を行いつつ、データ・ラベルを同時作成
 # シェルに書き込んで呼び出す関数の形で表すこととする
 
-import memo_secret as msc
+from warnings import warn
+try: import memo_secret as msc
+except ModuleNotFoundError:
+    warn('Cannot find memo_secret.py. you cannot make datasets, but you still can use some functions.', ImportWarning, 2)
+    class msc: O = S = L = './'
+
 import numpy as np
 import librosa as lb
 from matplotlib.pyplot import plot, close, show
