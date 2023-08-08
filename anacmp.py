@@ -1,5 +1,8 @@
 # 比較による解析 (ANAlysis by CoMParison)
 # サンプルレートはすべて44100Hzとすること。
+
+# nnAudio
+
 __doc__ = '[IMPORTANT] You *MUST* run "initialise_model" first for initialisation of the model which will be used for performance analysis.'
 from typing import Literal
 from collections import deque
@@ -9,17 +12,29 @@ import librosa as lb
 import numpy as np
 import torch
 
+from nnAudio.features.cqt import CQT1992v2
+np.float = float
+
 import fastdtw as fd
 
 from dtconv import dc
 from modelstack2 import powerconv, ToneEnDv2
 
+DEVICE = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 # モデルの設定 ピッチディテクションモデルを改良した場合はここを変えればよい
-MODEL = ToneEnDv2(0).to('cpu')
+MODEL = ToneEnDv2(0).to(DEVICE)
 
 # モデル初期化
-def initialise_model(model_state_dict_path: str): MODEL.load_state_dict(torch.load(model_state_dict_path, map_location = 'cpu'))
+def initialise_model(model_state_dict_path: str): MODEL.load_state_dict(torch.load(model_state_dict_path, map_location = DEVICE))
 I = initialise_model
+
+# 高速化用。librosa.cqtの代わり
+def _cqt(y:np.ndarray):
+    global DEVICE
+    layer_cqt = CQT1992v2(44100, 441, lb.note_to_hz('F0'), n_bins = 120, pad_mode = 'constant').to(DEVICE)
+    y_tensor = torch.from_numpy(y.astype('f4').copy()).to(DEVICE)
+    retval = layer_cqt(y_tensor).to('cpu').numpy().copy()
+    return retval[0]
 
 # 音源の読み込み。強制的に44100Hzのレートでとって、トリミングする
 def perf_to_array(path:str, threshold:int = 35, start_sec:float = None, end_sec:float = None):
@@ -44,7 +59,8 @@ def get_vol(y:np.ndarray):
 
 # ピアノロール抽出
 def extract_piano_roll(y:np.ndarray):
-    baseamp = lb.amplitude_to_db(np.abs(lb.cqt(y, sr = 44100, hop_length = 441, fmin = lb.note_to_hz('F0'), n_bins = 120, res_type = 'kaiser_fast')), ref = 2e-5)
+    baseamp = lb.amplitude_to_db(_cqt(y), ref = 2e-5)
+    # lb.cqtをnnAudioベースに置換 Tensor -> ndarray -> tensor は明らかに非効率なので改善予定
     formatted = np.pad(baseamp, [[0, 12], [0, 0]])
     formatted[formatted < 0] = 0
     inp = powerconv(formatted)
@@ -149,8 +165,8 @@ def analyse_by_comparison(perf1:np.ndarray, perf2:np.ndarray,
     for item in gap1:
         if item < 16 and tmpval:
             tmp = item/tmpval
-            if tmp < .7071: tmp *= 2 # 一応70msと140msで弾き分けが利かないこともないので倍の長さに対応
-            elif tmp > 1.4142: tmp /= 2
+            if tmp < 2**-.5: tmp *= 2 # 一応70msと140msで弾き分けが利かないこともないので倍の長さに対応
+            elif tmp > 2**.5: tmp /= 2
             gaprate1.append(tmp*100)
         tmpval = item
 
@@ -158,8 +174,8 @@ def analyse_by_comparison(perf1:np.ndarray, perf2:np.ndarray,
     for item in gap2:
         if item < 16 and tmpval:
             tmp = item/tmpval
-            if tmp < .7071: tmp *= 2
-            elif tmp > 1.4142: tmp /= 2
+            if tmp < 2**-.5: tmp *= 2
+            elif tmp > 2**.5: tmp /= 2
             gaprate2.append(tmp*100)
         tmpval = item
 

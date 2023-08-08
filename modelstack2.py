@@ -205,7 +205,7 @@ def train(pretrained:bool, trained_data_path:list, datatype:int, traindata_path:
           validdata_path:str, batch_size:int, epochs:int, lr: int, output_dir: str):
     """trained_data_path = list[state, log]\n
         datatype: 1 power | 2 onoff"""
-    device = 'cuda:0' # 今後の課題はTPU導入
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu' # 今後の課題はTPU導入
     model = ToneEnDv2(datatype-1).to(device)
     preinfo = {
         'epochs': 0,

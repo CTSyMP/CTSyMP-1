@@ -58,6 +58,9 @@ README.md このファイルです。
 <a href="http://pydub.com">pydub</a> (0.25.1)  
 <a href="https://pytorch.org">torch</a> (2.0.1)  
 
+※8 Aug 2023より適用
+<a href="https://github.com/KinWaiCheuk/nnAudio">nnAudio</a> (0.3.2)  
+
 尚、筆者のPythonヴァージョンは3.9.7となっております。機械学習の時のみ、GPUを使用できる<a href="https://colab.research.google.com/?hl=ja">Google Colaboratory</a>や<a href="https://www.kaggle.com/">Kaggle Notebook</a>Python3.10.12を利用しています。  
 
 ## 参考文献等
